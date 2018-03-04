@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+
+<body>
+    <canvas id="drawing" width="300" height="300" style="border:rgb(111, 122, 111) solid 1px">A Drawing of something</canvas>
+    <script>
+        var drawing = document.getElementById("drawing");
+        //确定浏览器支持<canvas>元素 
+        var shape = drawing.getContext("2d");
+        // 绘制直线段
+        shape.moveTo(150, 0);//指定开始坐标
+        shape.lineTo(200, 50);
+        shape.lineTo(150, 100);
+        shape.lineTo(200, 150);
+        shape.stroke();
+        //绘制矩形
+        if (drawing.getContext) {
+            //取得绘图上下文对象的引用，“2d”是取得2D上下文对象  
+            var context = drawing.getContext("2d");
+            //绘制红色矩形  
+            context.fillStyle = "red";
+            context.fillRect(10, 10, 50, 50);
+            //绘制半透明的蓝色矩形  
+            context.fillStyle = "rgba(0,0,255,0.5)";
+            context.fillRect(30, 30, 50, 50);
+            //绘制红色描边矩形  
+            context.strokeStyle = "red";
+            context.strokeRect(10, 90, 50, 50);
+            //绘制半透明的蓝色描边矩形  
+            context.strokeStyle = "rgba(0,0,255,0.5)";
+            context.strokeRect(30, 120, 50, 50);
+            //在两个矩形重叠的地方清除一个小矩形  
+            context.clearRect(30, 30, 30, 30);
+        }  
+    </script>
+</body>
+
+</html>
