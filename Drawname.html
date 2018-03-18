@@ -1,0 +1,128 @@
+<html>
+
+<head>
+    <title>名称编码</title>
+</head>
+
+<body onload="DrawDesk()">
+    <div align="center" style="width:600pX;height:200pX;margin-left:350pX;margin-top:20pX;border:medium double rgb(0,0,0)">
+        <h5 style="margin-left:-450px;margin-right:20px;">10160317 杨景</h5>
+        <h style="font-family:宋体;margin-left:0pX;margin-top:100pX;font-size:20pX;">
+            <strong>空间对象几何特征编码</strong>
+        </h>
+        <p style="font-family:宋体;font-size:15pX;margin-top:5pX;margin-left:5pX;">&nbsp 问题：读取ESRI ArcInfo generate文件，并根据文件将结果绘制在屏幕上</p>
+        <div1>
+            <div>
+                <from style="margin-left:50pX;font-size:15px;">
+                    请选择generate文件：
+                    <input id="File" type="file" />
+            </div>
+            </from>
+            <br>
+            <button style="margin-left:350pX;margin-top:0px;" type="button" onclick=" Getname()">确定选择</button>
+            <button type="button" onclick="Clearcanvas();DrawDesk()">清空画布</button>
+        </div1>
+    </div>
+    <canvas id="canvas" style="margin-left:250px;border:1px solid #000;margin-top:10px;"></canvas>
+    <script>    
+        var canvas = document.getElementById('canvas');
+        var text = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 360;
+        var startX = 30;//第一个棋盘开始的坐标
+        var startY = 20;
+        var number = 2;
+        var edge = 20;//网格的边长
+        var dis = 80;    //网格间隔
+        // 读取文件写入名字
+        function Getname() {
+            var files = document.getElementById('File').files;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var reader = new FileReader();
+                reader.readAsText(file);//以文本形式读取文件
+               
+                reader.onload = function (e) {
+                    var record = this.result;//读取文件
+                    Drawname(record);//绘制该文件中包含的内容
+                }
+            }
+        }
+
+        //绘制网格
+        function DrawDesk() {
+            //网格间隔为20，棋盘间间隔为80
+            for (var k = 0; k < number; k++) {
+                //画纵线
+                for (var i = 0; i < 17; i++) {
+                    text.strokeStyle = "grey";
+                    text.lineWidth = parseInt(1);
+                    text.beginPath();
+                    var x1 = edge * i;
+                    var y1 = 0;
+                    var x2 = edge * i;
+                    var y2 = edge * 16;
+                    var x3 = x1, y3 = y1, x4 = x2, y4 = y2;
+                    text.moveTo(startX + k * (edge * 16 + dis) + x3, y3 + startY);
+                    text.lineTo(startX + k * (edge * 16 + dis) + x4, y4 + startY);
+                    text.stroke();
+                }
+                //画横线
+                for (var i = 0; i < 17; i++) {
+                    text.strokeStyle = "grey";
+                    text.lineWidth = parseInt(1);
+                    text.beginPath();
+                    var x1 = 0;
+                    var y1 = edge * i;
+                    var x2 = edge * 16;
+                    var y2 = edge * i;
+                    var x3 = x1, y3 = y1, x4 = x2, y4 = y2;
+                    text.moveTo(startX + k * (edge * 16 + dis) + x3, startY + y3);
+                    text.lineTo(startX + k * (edge * 16 + dis) + x4, startY + y4);
+                    text.stroke();
+                }
+            }
+        }
+        function Clearcanvas() {
+            text.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        function Drawname(record)//画名字
+        {
+            var name = record.split('\r\n');//把record这个字符串根据回车换行分割
+            var start = false;//start为真时表示起点
+            text.lineWidth = 6;//设置画笔的宽度和颜色
+            text.strokeStyle = "black";
+            //开始读取文件
+            for (var i = 0; i < name.length; i++) {
+                //寻找起点
+                if (name[i] == 'end') {
+                    text.stroke();//若遇到‘end’则结束该条线段的绘制，并且将start重置为true
+                    start = true;
+                    continue;
+                }
+                var point = name[i].split(',');//去除坐标中“，”，使其变为数组
+                if (point.length < 2)//因为L1经过split函数处理后长度为1，因此用来判断是否为线标号还是坐标
+                {
+                    start = true;//找到“L1”表明找到了起点
+                    continue;//继续寻找起始坐标
+                }
+                if (start) {//若start为真则表明为起点
+                    var x0 = point[0] * edge;
+                    var y0 = point[1] * edge;
+                    text.beginPath();
+                    text.moveTo(startX + x0, startY + y0);
+                    start = false;//表示起点已经绘制
+                }
+                else {
+                    var x1 = point[0] * edge;
+                    var y1 = point[1] * edge;
+                    text.lineTo(x1 + startX, y1 + startY);
+                    start = false;
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>
