@@ -1,0 +1,458 @@
+<html>
+
+<head>
+    <title>名称编码</title>
+    <style>
+        .btn {
+            margin-left: 20px;
+            margin-top: 10px;
+            border-color: grey;
+            border-radius: 3px;
+            background-color: white;
+            width: 50px;
+            height: 30px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body onload="DrawDesk()">
+    <div style="width:600pX;height:285pX;margin-left:350pX;margin-top:10pX;border:medium double rgb(0,0,0)">
+        <div style="margin-left:10px;margin-top:10px;font-size:13px;">
+            <strong>10160317 杨景</strong>
+        </div>
+        <div style="font-family:LiSu;margin-left:200pX;margin-top:-5pX;font-size:18pX;">
+            <strong>空间对象几何特征编码</strong>
+        </div>
+        <p style="font-family:宋体;font-size:15pX;margin-top:5pX;margin-left:45pX;">
+            <strong>问题：读取ESRI ArcInfo generate文件，并根据文件将结果绘制在屏幕上</strong>
+        </p>
+        <div1>
+            <div>
+                <from style="font-family:楷体;margin-left:10pX;font-size:15px;">
+                    文件路径：
+                    <input id="File" type="file" multiple="mutifile" />
+                    <button class="btn" onclick="Getname()" style="margin-left:-30px;">显示</button>
+                    <button class="btn" onclick="Clearcanvas();DrawDesk()">清空</button>
+                    <button class="btn" onclick="Setstart()">还原</button>
+            </div>
+            <div>
+                <a style=" margin-left:10pX;margin-top:8px;font-family:楷体;font-size:15pX;">倾斜>></a>
+                <button style="margin-top:8px;" type="button" onclick="Leftoblique()">左斜</button>
+                &nbsp
+                <button style="margin-top:8px;" type="button" onclick="Songjian()">耸肩</button>
+            </div>
+            <div>
+                <a style=" margin-left:10pX;margin-top:8px;font-family:楷体;font-size:15pX;">平移>></a>
+                <input style="margin-left:-0pX;margin-top:8px;width:60px;" type="number" id="Panning" name="Panning">
+                <a style="font-family:宋体;font-size:15pX;">Px</a>
+                <button style="margin-top:8px;" type="button" onclick="Moveleft()">左移</button>
+                <button style="margin-top:8px;" type="button" onclick="Moveright()">右移</button>
+                <button style="margin-top:8px;" type="button" onclick="Moveup()">上移</button>
+                <button style="margin-top:8px;" type="button" onclick="Movedown()">下移</button>
+            </div>
+            <div>
+                <a style="margin-left:10pX;margin-top:8px;font-family:楷体;font-size:15pX;">比例>></a>
+                <input style="margin-left:-0pX;margin-top:8px;width:60px;" type="number" id="Times" name="Times">
+                <a style="font-family:宋体;font-size:15pX;">倍</a>
+                <button style="margin-top:8px;" type="button" onclick="Enlarge()">放大</button>
+                <button style="margin-top:8px;" type="button" onclick="Lessen()">缩小</button>
+            </div>
+            <div>
+                <a style="margin-left:10pX;margin-top:8px;font-family:楷体;font-size:15pX;">对称>></a>
+                <button style="margin-top:8px;" type="button" onclick="LRsymmetry()">左右中心对称</button>
+                <button style="margin-top:8px;" type="button" onclick="UDsymmetry()">上下中心对称</button>
+            </div>
+            <div>
+                <a style="margin-left:10pX;margin-top:8px;font-family:楷体;font-size:15pX;">旋转>></a>
+                <input type="number" id="tangle" style="width:60px;" />
+                <a>°</a>
+                <button style="margin-top:8px;" type="button" onclick="ClockwiseRotation()">顺时针旋转</button>
+                <button style="margin-top:8px;" type="button" onclick="AnticlockwiseRotation()">逆时针旋转</button>
+            </div>
+
+    </div>
+    <canvas id="canvas" style="margin-left:250px;border:1px solid #000;margin-top:10px;"></canvas>
+    <script>    
+        var canvas = document.getElementById('canvas');
+        var text = canvas.getContext('2d');
+        canvas.width = 800;//画布宽高
+        canvas.height = 400;
+        //坐标原点设为画布左上角
+        var startX = 110;//第一个棋盘开始的坐标
+        var startY = 70;
+        var number = 2;
+        var side = 16;//网格的边长
+        var dis = 80; //棋盘间隔
+        var tan15 = 2 - Math.sqrt(3);//定义tan15°算法
+        var PI = 3.1415926;
+        var leftoblique = false;
+        var songjian = false;
+        var lrsymmetry = false;
+        var udsymmetry = false;
+        var clockwiserotation = false;
+        var anticlockwiserotation = false;
+        var a = 16;
+        //还原棋盘和姓名为初始状态
+        function Setstart() {
+            startX = 110;//第一个棋盘开始的坐标
+            startY = 70;
+            side = 16;//网格的边长
+            dis = 80;    //棋盘间隔
+            leftoblique = false;
+            songjian = false;
+            lrsymmetry = false;
+            udsymmetry = false;
+            clockwiserotation = false;
+            anticlockwiserotation = false;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+
+        }
+        //放大
+        function Enlarge() {
+            var t = document.getElementById("Times").value;
+            if (t == "")
+                return;
+            Clearcanvas();
+            side = side * t;//将坐标乘以倍数
+            dis = dis * t;
+            DrawDesk();
+            Getname();
+        }
+        //缩小
+        function Lessen() {
+            var t = document.getElementById("Times").value;
+            if (t == "")
+                return;
+            Clearcanvas();
+            side = side / t;//坐标除以倍数
+            dis = dis / t;
+            DrawDesk();
+            Getname();
+        }
+        //向左平移
+        function Moveleft() {
+            var x = document.getElementById("Panning").value;
+            if (x == "")
+                return;
+            x = parseFloat(x);
+            Clearcanvas();
+            startX = startX - x;//X坐标减去平移量
+            DrawDesk();
+            Getname();
+        }
+        //向右平移
+        function Moveright() {
+            var x = document.getElementById("Panning").value;
+            if (x == "")
+                return;
+            x = parseFloat(x);
+            Clearcanvas();
+            startX = startX + x;//X坐标加上平移量
+            DrawDesk();
+            Getname();
+        }
+        //向上平移
+        function Moveup() {
+            var y = document.getElementById("Panning").value;
+            if (y == "")
+                return;
+            y = parseFloat(y);
+            Clearcanvas();
+            startY = startY - y;//Y坐标减去平移量
+            DrawDesk();
+            Getname();
+        }
+        //向下平移
+        function Movedown() {
+            var y = document.getElementById("Panning").value;
+            if (y == "")
+                return;
+            y = parseFloat(y);
+            Clearcanvas();
+            startY = startY + y;//纵坐标加上平移量
+            DrawDesk();
+            Getname();
+        }
+        //定义左斜变换XY的变化
+        function LeftobliqueXY(x, y) {
+            x = x + tan15 * y;//横坐标变化
+            y = y;//纵坐标不变
+            var point = [x, y];
+            return point;
+        }
+        //定义左斜button对应的触发函数
+        function Leftoblique() {
+            leftoblique = true;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+        }
+        //定义耸肩变换XY的变化
+        function SongjianXY(x, y) {
+            x = x;//横坐标不变
+            y = y - x * tan15;//纵坐标的变化
+            var point = [x, y];
+            return point;
+        }
+        //定义耸肩button对应的触发函数
+        function Songjian() {
+            songjian = true;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+        }
+        //定义左右中心对称button的触发函数
+        function LRsymmetry() {
+            lrsymmetry = true;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+        }
+        //定义上下中心对称button对应的触发函数
+        function UDsymmetry() {
+            udsymmetry = true;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+        }
+        //定义顺时针旋转XY的变化
+        function ClockwiseRotationXY(x, y) {
+            var t = document.getElementById("tangle").value;
+            if (t == "") return;
+            t = parseFloat(t);
+            t = t * PI / 180;//将角度转化为弧度
+            x = x - side * a / 2;//将坐标系平移至棋盘中心
+            y = y - side * a / 2;
+            var x1 = x * Math.cos(t) - y * Math.sin(t);//横坐标的变化
+            var y1 = y * Math.cos(t) + x * Math.sin(t);//纵坐标变化
+            var point = [x1 + side * a / 2, y1 + side * a / 2];//将平移后的坐标系复原
+            return point;
+        }
+        //定义顺时针旋转button的触发函数
+        function ClockwiseRotation() {
+            clockwiserotation = true;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+        }
+        //定义逆时针旋转XY的变化
+        function AnticlockwiseRotationXY(x, y) {
+            var t = document.getElementById("tangle").value;
+            if (t == "") return;
+            t = parseFloat(t);
+            t = t * PI / 180;
+            x = x - side * a / 2;//将坐标系平移至棋盘中心
+            y = y - side * a / 2;
+            var x1 = x * Math.cos(t) + y * Math.sin(t);//横坐标变化
+            var y1 = y * Math.cos(t) - x * Math.sin(t);//纵坐标变化
+            var point = [x1 + side * a / 2, y1 + side * a / 2];//将平移后的坐标系复原
+            return point;
+        }
+        //定义逆时针旋转button的触发函数
+        function AnticlockwiseRotation() {
+            anticlockwiserotation = true;
+            Clearcanvas();
+            DrawDesk();
+            Getname();
+        }
+        // 读取文件写入名字
+        function Getname() {
+            var n = 0;
+            var files = document.getElementById('File').files;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var reader = new FileReader();
+                reader.readAsText(file);//以文本形式读取文件
+
+                reader.onload = function (e) {
+                    var record = this.result;//读取文件
+                    Drawname(record, n);//绘制该文件中包含的内容
+                    n++;
+                }
+            }
+        }
+
+        //绘制网格
+        function DrawDesk() {
+            //网格间隔为16，棋盘间间隔为80,网格为16*16
+            for (var k = 0; k < number; k++) {//控制棋盘数量
+                //画纵线
+                for (var i = 0; i < 17; i++) {
+                    text.strokeStyle = "grey";
+                    text.lineWidth = parseInt(1);
+                    text.beginPath();
+                    var x1 = side * i;
+                    var y1 = 0;
+                    var x2 = side * i;
+                    var y2 = side * 16;
+                    var x3 = x1, y3 = y1, x4 = x2, y4 = y2;
+                    if (leftoblique == true) {//左斜变换后的棋盘纵线端点坐标
+                        x3 = LeftobliqueXY(x1, y1)[0];
+                        y3 = LeftobliqueXY(x1, y1)[1];
+                        x4 = LeftobliqueXY(x2, y2)[0];
+                        y4 = LeftobliqueXY(x2, y2)[1];
+                    }
+                    if (songjian == true) {//耸肩变换后的棋盘纵线端点坐标
+                        x3 = SongjianXY(x1, y1)[0];
+                        y3 = SongjianXY(x1, y1)[1];
+                        x4 = SongjianXY(x2, y2)[0];
+                        y4 = SongjianXY(x2, y2)[1];
+                    }
+                    if (clockwiserotation == true) {//顺时针旋转变换后的棋盘纵线端点坐标
+                        x3 = ClockwiseRotationXY(x1, y1)[0];
+                        y3 = ClockwiseRotationXY(x1, y1)[1];
+                        x4 = ClockwiseRotationXY(x2, y2)[0];
+                        y4 = ClockwiseRotationXY(x2, y2)[1];
+                    }
+                    if (anticlockwiserotation == true) {//逆时针旋转变换后的棋盘纵线端点坐标
+                        x3 = AnticlockwiseRotationXY(x1, y1)[0];
+                        y3 = AnticlockwiseRotationXY(x1, y1)[1];
+                        x4 = AnticlockwiseRotationXY(x2, y2)[0];
+                        y4 = AnticlockwiseRotationXY(x2, y2)[1];
+                    }
+                    text.moveTo(startX + k * (side * 16 + dis) + x3, y3 + startY);
+                    text.lineTo(startX + k * (side * 16 + dis) + x4, y4 + startY);
+                    text.stroke();
+                }
+                //画横线
+                for (var i = 0; i < 17; i++) {
+                    text.strokeStyle = "grey";
+                    text.lineWidth = parseInt(1);
+                    text.beginPath();
+                    var x1 = 0;
+                    var y1 = side * i;
+                    var x2 = side * 16;
+                    var y2 = side * i;
+                    var x3 = x1, y3 = y1, x4 = x2, y4 = y2;
+                    if (leftoblique == true) {//左斜变换后的棋盘横线端点坐标
+                        x3 = LeftobliqueXY(x1, y1)[0];
+                        y3 = LeftobliqueXY(x1, y1)[1];
+                        x4 = LeftobliqueXY(x2, y2)[0];
+                        y4 = LeftobliqueXY(x2, y2)[1];
+                    }
+                    if (songjian == true) {//耸肩变换后的棋盘横线端点坐标
+                        x3 = SongjianXY(x1, y1)[0];
+                        y3 = SongjianXY(x1, y1)[1];
+                        x4 = SongjianXY(x2, y2)[0];
+                        y4 = SongjianXY(x2, y2)[1];
+                    }
+                    if (clockwiserotation == true) {//顺时针旋转变换后的棋盘横线端点坐标
+                        x3 = ClockwiseRotationXY(x1, y1)[0];
+                        y3 = ClockwiseRotationXY(x1, y1)[1];
+                        x4 = ClockwiseRotationXY(x2, y2)[0];
+                        y4 = ClockwiseRotationXY(x2, y2)[1];
+                    }
+                    if (anticlockwiserotation == true) {//逆时针旋转变换后的棋盘横线端点坐标
+                        x3 = AnticlockwiseRotationXY(x1, y1)[0];
+                        y3 = AnticlockwiseRotationXY(x1, y1)[1];
+                        x4 = AnticlockwiseRotationXY(x2, y2)[0];
+                        y4 = AnticlockwiseRotationXY(x2, y2)[1];
+                    }
+                    text.moveTo(startX + k * (side * 16 + dis) + x3, startY + y3);
+                    text.lineTo(startX + k * (side * 16 + dis) + x4, startY + y4);
+                    text.stroke();
+                }
+            }
+        }
+        function Clearcanvas() {
+            text.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        function Drawname(record, n)//画名字
+        {
+            var name = record.split('\r\n');//把字符串根据回车换行分割
+            var start = false;//start为真时表示起点
+            text.lineWidth = 6;//设置画笔的宽度和颜色
+            text.strokeStyle = "black";
+            //开始读取文件
+            for (var i = 0; i < name.length; i++) {
+                //寻找起点
+                if (name[i] == 'end') {
+                    text.stroke();//若遇到‘end’则结束该条线段的绘制，并且将start重置为true
+                    start = true;
+                    continue;
+                }
+                var point = name[i].split(',');//去除坐标中“，”，使其变为数组
+                if (point.length < 2)//L1经过split函数处理后长度为1，因此用来判断是否为线标号还是坐标
+                {
+                    start = true;//找到“L1”表明找到了起点
+                    continue;//继续寻找起始坐标
+                }
+                if (start) {//若start为真则表明为起点
+                    var x1 = point[0] * side;
+                    var y1 = point[1] * side;
+                    var x0 = x1, y0 = y1;
+                    if (leftoblique == true) {
+                        x0 = LeftobliqueXY(x1, y1)[0];
+                        y0 = LeftobliqueXY(x1, y1)[1];
+                    }
+                    if (songjian == true) {
+                        x1 = x0; y1 = y0;
+                        x0 = SongjianXY(x1, y1)[0];
+                        y0 = SongjianXY(x1, y1)[1];
+                    }
+                    if (lrsymmetry == true) {
+                        x1 = x0; y1 = y0;
+                        x0 = 16 * side - x1;
+                    }
+                    if (udsymmetry == true) {
+                        x1 = x0; y1 = y0;
+                        y0 = side * 16 - y1;
+                    }
+                    if (clockwiserotation == true) {
+                        x1 = x0; y1 = y0;
+                        x0 = ClockwiseRotationXY(x1, y1)[0];
+                        y0 = ClockwiseRotationXY(x1, y1)[1];
+                    }
+                    if (anticlockwiserotation == true) {
+                        x1 = x0; y1 = y0;
+                        x0 = AnticlockwiseRotationXY(x1, y1)[0];
+                        y0 = AnticlockwiseRotationXY(x1, y1)[1];
+                    }
+                    text.beginPath();
+                    text.moveTo(startX + x0 + n * (dis + 16 * side), startY + y0);
+                    start = false;//表示起点已经绘制
+
+                }
+                else {//绘制其余点
+                    var x2 = point[0] * side;
+                    var y2 = point[1] * side;
+                    var x0 = x2, y0 = y2;
+                    if (leftoblique == true) {
+                        x0 = LeftobliqueXY(x2, y2)[0];
+                        y0 = LeftobliqueXY(x2, y2)[1];
+                    }
+                    if (songjian == true) {
+                        x2 = x0; y2 = y0;
+                        x0 = SongjianXY(x2, y2)[0];
+                        y0 = SongjianXY(x2, y2)[1];
+                    }
+                    if (lrsymmetry == true) {
+                        x2 = x0; y2 = y0;
+                        x0 = 16 * side - x2;
+                    }
+                    if (udsymmetry == true) {
+                        x2 = x0; y2 = y0;
+                        y0 = side * 16 - y2;
+                    }
+                    if (clockwiserotation == true) {
+                        x2 = x0; y2 = y0;
+                        x0 = ClockwiseRotationXY(x2, y2)[0];
+                        y0 = ClockwiseRotationXY(x2, y2)[1];
+                    }
+                    if (anticlockwiserotation == true) {
+                        x2 = x0; y2 = y0;
+                        x0 = AnticlockwiseRotationXY(x2, y2)[0];
+                        y0 = AnticlockwiseRotationXY(x2, y2)[1];
+                    }
+                    text.lineTo(x0 + n * (dis + 16 * side) + startX, y0 + startY);
+                    start = false;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
