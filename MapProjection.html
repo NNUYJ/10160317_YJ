@@ -1,0 +1,304 @@
+<html>
+
+<head>
+    <title>投影变换</title>
+    <style>
+        .btn {
+            margin-left: 20px;
+            margin-top: 10px;
+            border-color: grey;
+            border-radius: 3px;
+            background-color: white;
+            width: 50px;
+            height: 30px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body onload="DrawGrid()">
+    <div style="width:1250pX;height:110pX;margin-left:10pX;margin-top:10pX;border:medium double rgb(0,0,0)">
+        <div style="margin-left:10px;margin-top:10px;font-size:13px;">
+            <strong>10160317&nbsp&nbsp&nbsp杨景&nbsp&nbsp&nbsp地图投影</strong>
+        </div>
+        <div style="font-family:Kaiti;font-size:15px;margin-top:5px;">
+            <a style="margin-left:10px;">添加地图 >></a>
+            <a style="margin-left:10px;">选择输入文件：</a>
+            <input type="file" id="file" style="width: 200px;" />
+
+            <a style="margin-left: 7px;">选择地图尺度：</a>
+            <select style="height:25px;margin-right: 40px" id="t1" onchange="DropdownMenu()">
+                <option value="china">中国地图</option>
+                <option value="world">世界地图</option>
+            </select>
+
+            <a style="margin-left: 7px;">选择投影类型：</a>
+            <select style="height:25px; margin-right: 30px;" id="t2">
+                <option value="geography">地理坐标系</option>
+                <option value="lambert">兰伯特投影</option>
+                <option value="mercator">墨卡托投影</option>
+            </select>
+            &nbsp&nbsp&nbsp
+            <button class="btn" onclick="DrawMap()" style="margin-left:-30px;">显示</button>
+            <button class="btn" onclick="ClearCanvas();">清空</button>
+        </div>
+        <div style="font-family:Kaiti;font-size:15px;margin-top:5px;">
+            <a style="margin-left:10px;">大圆航线 >></a>
+            <a style="margin-left:10px;">北京经纬度:</a>
+            <a>经度</a>
+            <input id="x1" style="width:60px;" value="116.4" />
+            <a style="margin-left:-7px;">°E</a>
+            &nbsp
+            <a style="margin-left: 5px;">纬度</a>
+            <input id="y1" style="width:60px;" value="39.8" />
+            <a style="margin-left:-7px;">°N</a>
+            &nbsp&nbsp&nbsp
+            <a>巴黎经纬度:</a>
+            <a>经度</a>
+            <input id="x2" style="width:60px;" value="2.2" />
+            <a style="margin-left:-7px;">°E</a>
+            &nbsp
+            <a style="margin-left: 8px;">纬度</a>
+            <input id="y2" style="width:60px;" value="48.52" />
+            <a style="margin-left:-7px;">°N</a>
+            <button class="btn" onclick="DrawGreatCircle()" style="margin-top: 2px;margin-left:47px;">绘制</button>
+
+            &nbsp
+            <button class="btn" onclick="DrawMap()" style="margin-top: 2px;margin-left:5px;">清除</button>
+        </div>
+    </div>
+    <canvas id="map" style="border:1px solid #000;margin-left:10px;margin-top:0px;"></canvas>
+    <script>
+        var canvas = document.getElementById('map');
+        var ctext = canvas.getContext('2d');
+        canvas.width = 1250;
+        canvas.height = 570;
+        var e2, e02, a, b;
+        //清空画布
+        function ClearCanvas() {
+            ctext.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        //下拉框的设置
+        function DropdownMenu() {
+            var s1 = document.getElementById('t1');
+            var s2 = document.getElementById('t2');
+            if (s1.value == "world") {
+                s2.length = 0;
+                s2.add(new Option("地理坐标系", "geography"));
+                s2.add(new Option("墨卡托投影", "mercator"));
+            }
+            else {
+                s2.length = 0;
+                s2.add(new Option("地理坐标系", "geography"));
+                s2.add(new Option("兰伯特投影", "lambert"));
+                s2.add(new Option("墨卡托投影", "mercator"));
+            }
+        }
+
+        function DrawMap() {
+            var t1 = document.getElementById('t1').value;
+            var t2 = document.getElementById('t2').value;
+            if (t1 == "china") {
+                e2 = 0.006693421622966;//克拉索夫斯基椭球体的第一偏心率
+                e02 = 0.006738525414683;//克拉索夫斯基椭球体的第二偏心率
+                a = 6378245;//克拉索夫斯基椭球体的长半径
+                b = 6356863.0187730473;//克拉索夫斯基椭球体的短半径
+            }
+            else if (t1 = "world") {
+                e2 = 0.00669437999013;//wgs84基椭球体的第一偏心率
+                e02 = 0.006739496742227;//wgs84基椭球体的第二篇心率
+                a = 6378137; //wgs84基椭球体的长半径
+                b = 6356752.3142;//wgs84基椭球体的短半径
+            }
+            var file = document.getElementById('file').files[0];
+            var reader = new FileReader();
+            reader.readAsText(file);
+            var data = null;
+            reader.onload = function (e) {
+                data = this.result;
+                ClearCanvas();
+                DrawGird(t1, t2);
+                GetMap(t1, t2, data);
+            }
+        }
+        //检查x是否是无穷大，如果是则变为10000
+        function CheckX(x) {
+            if (isFinite(x)) {
+                return x;
+            }
+            else {
+                return 10000;
+            }
+        }
+        //绘制网格
+        function DrawGird(t1, t2) {
+            ctext.strokeStyle = "grey";
+            ctext.lineWidth = 0.5;
+            //绘制纬线
+            for (var i = -18; i <= 18; i++) {
+                for (var j = -36; j < 36; j++) {
+                    var x = j * 5;
+                    var y = i * 5;
+                    var point1 = GetPoint(t1, t2, x, y);
+                    var point2 = GetPoint(t1, t2, x + 5, y);
+                    ctext.beginPath();
+                    ctext.moveTo(CheckX(point1[0]), CheckX(point1[1]));
+                    ctext.lineTo(CheckX(point2[0]), CheckX(point2[1]));
+                    ctext.stroke();
+                }
+            }
+            //绘制经线
+            for (var i = -36; i <= 36; i++) {
+                for (var j = -18; j < 18; j++) {
+                    var x = i * 5;
+                    var y = j * 5;
+                    var point1 = GetPoint(t1, t2, x, y);
+                    var point2 = GetPoint(t1, t2, x, y + 5);
+                    ctext.beginPath();
+                    ctext.moveTo(CheckX(point1[0]), CheckX(point1[1]));
+                    ctext.lineTo(CheckX(point2[0]), CheckX(point2[1]));
+                    ctext.stroke();
+                }
+            }
+        }
+        function GetPoint(t1, t2, x, y) {
+            if (t1 == "china" && t2 == "geography") {
+                return [(x - 40) * 10, canvas.height - y * 10];
+            }
+            if (t1 == "china" && t2 == "lambert") {
+                var point = LambertXY(x, y);
+                var x0 = (point[0] - 5000000) / 10100 + 1100;
+                var y0 = canvas.height - (point[1] - 1000000) / 10100 - 60;
+                return [x0, y0];
+            }
+            if (t1 == "china" && t2 == "mercator") {
+                var point = MercatorXY(x, y);
+                var x0 = (point[0] - 13700000) / 12000 + 780;
+                var y0 = canvas.height - (point[1] - 5700000) / 12000 - 450;
+                return [x0, y0];
+            }
+            if (t1 == "world" && t2 == "geography") {
+                return [(x - 40) * 3 + 750, canvas.height - y * 3 - 300];
+            }
+            if (t1 == "world" && t2 == "mercator") {
+                var point = MercatorXY(x, y);
+                var x0 = (point[0] - 13700000) / 70000 + 780;
+                var y0 = canvas.height - (point[1] - 5700000) / 70000 - 390;
+                return [x0, y0];
+            }
+        }
+        function GetMap(t1, t2, data) {
+            ctext.strokeStyle = "blue";
+            data = data.split('\r\n');
+            var count = 0;
+            for (var i = 0; i < data.length; i++) {
+                var line = data[i];
+                if (line == "END") {
+                    ctext.stroke();
+                    count = 0;
+                    continue;
+                }
+                var point = line.split(',');
+                if (point.length < 2) {
+                    count = 1;
+                    continue;
+                }
+                if (count == 1) {
+                    ctext.beginPath();
+                    var t = GetPoint(t1, t2, point[0], point[1]);
+                    ctext.moveTo(t[0], t[1]);
+                    count++;
+                }
+                else {
+                    var t = GetPoint(t1, t2, point[0], point[1]);
+                    ctext.lineTo(t[0], t[1]);
+                }
+            }
+        }
+
+        function MercatorXY(L, B) {
+            L = L * Math.PI / 180;
+            B = B * Math.PI / 180;
+            var B0 = 0;
+            var L0 = 0;
+            var e = Math.sqrt(e2);
+            var K = (a * a / b) / Math.sqrt(1 + e02 * Math.cos(B0) * Math.cos(B0)) * Math.cos(B0);
+            var X = K * Math.log(Math.tan(Math.PI / 4 + B / 2) * Math.pow(((1 - e * Math.sin(B)) / (1 + e * Math.sin(B))), e / 2));
+            var Y = K * (L - L0);
+            return [Y, X];
+        }
+        function LambertXY(L, B) {
+            L = L * Math.PI / 180;
+            B = B * Math.PI / 180;
+            var b1 = 20 * Math.PI / 180; //兰伯特投影的标准纬线1
+            var b2 = 40 * Math.PI / 180; //兰伯特投影的标准纬线2
+            var l0 = 105 * Math.PI / 180;  //原点经度
+            var b0 = 0;  //原点纬度
+            var m = Math.cos(B) / Math.sqrt(1 - e2 * Math.sin(B) * Math.sin(B));
+            var mb1 = Math.cos(b1) / Math.sqrt(1 - e2 * Math.sin(b1) * Math.sin(b1));
+            var mb2 = Math.cos(b2) / Math.sqrt(1 - e2 * Math.sin(b2) * Math.sin(b2));
+            var e = Math.sqrt(e2);
+            var temp = Math.tan(Math.PI / 4 - B / 2);
+            var t = Math.tan(Math.PI / 4 - B / 2) / Math.pow(((1 - e * Math.sin(B)) / (1 + e * Math.sin(B))), e / 2);
+            var tb1 = Math.tan(Math.PI / 4 - b1 / 2) / Math.pow(((1 - e * Math.sin(b1)) / (1 + e * Math.sin(b1))), e / 2);
+            var tb2 = Math.tan(Math.PI / 4 - b2 / 2) / Math.pow(((1 - e * Math.sin(b2)) / (1 + e * Math.sin(b2))), e / 2);
+            var n = Math.log(mb1 / mb2) / Math.log(tb1 / tb2);
+            var F = mb1 / (n * Math.pow(tb1, n));
+            var r = a * F * Math.pow(t, n);
+            //计算r0，需要计算t0
+            var t0 = Math.tan(Math.PI / 4 - b0 / 2) / Math.pow((1 - e * Math.sin(b0)) / (1 + e * Math.sin(b0)), e / 2);
+            var r0 = a * F * Math.pow(t0, n);
+            var theta = n * (L - l0);
+            var X = r0 - r * Math.cos(theta);
+            var Y = r * Math.sin(theta);
+            return [Y, X];
+        }
+        function SortPoint(a, b) {
+            return b[0] - a[0];
+        }
+        //绘制大圆航线
+        function DrawGreatCircle() {
+            ctext.strokeStyle = "red";
+            var t1 = document.getElementById('t1').value;
+            var t2 = document.getElementById('t2').value;
+            var x1 = parseFloat(document.getElementById('x1').value);
+            var y1 = parseFloat(document.getElementById('y1').value);
+            var x2 = parseFloat(document.getElementById('x2').value);
+            var y2 = parseFloat(document.getElementById('y2').value);
+            var point = [[x1, y1], [x2, y2]];
+            var addpoint;
+            var p1, p2;
+            var i = 0, j = 1;
+            while (i < 6) {
+                for (var j = 0; j < point.length - 1; j = j + 2) {
+                    p1 = point[j];
+                    p2 = point[j + 1];
+                    addpoint = DrawGreatCircleXY(p1[0], p1[1], p2[0], p2[1]);
+                    point.splice(j + 1, 0, addpoint);
+                }
+                i++;
+            }
+            point.sort(SortPoint);
+            ctext.beginPath();
+            for (var i = 0; i < point.length; i++) {
+                var point0 = GetPoint(t1, t2, point[i][0], point[i][1]);
+                ctext.lineTo(point0[0], point0[1]);
+            }
+            ctext.stroke();
+        }
+        //计算大圆航线上的点坐标
+        function DrawGreatCircleXY(long1, lat1, long2, lat2) {
+            lat1 = lat1 * Math.PI / 180;
+            lat2 = lat2 * Math.PI / 180;
+            long1 = long1 * Math.PI / 180;
+            long2 = long2 * Math.PI / 180;
+            var Bx = Math.cos(lat2) * Math.cos(long2 - long1);
+            var By = Math.cos(lat2) * Math.sin(long2 - long1);
+            var latm = Math.atan2(Math.sin(lat1) + Math.sin(lat2), Math.sqrt((Math.cos(lat1) + Bx) * (Math.cos(lat1) + Bx) + By * By));
+            var lonm = long1 + Math.atan2(By, Math.cos(lat1) + Bx);
+            return [lonm * 180 / Math.PI, latm * 180 / Math.PI];
+        }
+    </script>
+</body>
+
+</html>
