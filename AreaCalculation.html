@@ -1,0 +1,260 @@
+<html>
+
+<head>
+    <title>面积计算</title>
+    <style>
+        .btn {
+            margin-left: 20px;
+            margin-top: 10px;
+            border-color: grey;
+            border-radius: 3px;
+            background-color: white;
+            width: 50px;
+            height: 30px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width:1230pX;height:115pX;margin-left:10pX;margin-top:10pX;border:medium double rgb(0,0,0)">
+        <div style="margin-left:10px;margin-top:10px;font-size:13px;">
+            <strong>10160317&nbsp&nbsp&nbsp杨景&nbsp&nbsp&nbsp面积计算</strong>
+        </div>
+        <div style="margin-left:20pX;margin-top:0px;font-size:15px;font-family:宋体;">
+
+            <strong>>> 添加文件：</strong>
+            <input id="File" type="file" multiple="mutifile" />
+            <from style="margin-left:-50px;">
+                <strong>>> 选择坐标系：</strong>
+                <select style="height:23px;" id="geoType">
+                    <option value="mecator">墨卡托投影</option>
+                    <option value="geography">地理坐标系</option>
+                </select>
+            </from>
+            <from style="margin-left:5px;">
+                <button class="btn" type="button" onclick="clearcanvas();GetMap();">显示</button>
+                <button class="btn" type="button" onclick="clearcanvas()">清空</button>
+            </from>
+        </div>
+
+        <div style="margin-left:20pX;margin-top:0px;font-size:15px;font-family:宋体;">
+            <strong>>>请选择需要计算面积的地级市：</strong>
+            <select style="height:23px;" id="city">
+                <option value="1">连云港</option>
+                <option value="2">徐州</option>
+                <option value="3">宿迁</option>
+                <option value="4">盐城</option>
+                <option value="5">淮安</option>
+                <option value="6">泰州</option>
+                <option value="7">南通</option>
+                <option value="8">扬州</option>
+                <option value="9">南京</option>
+                <option value="10">镇江</option>
+                <option value="11">常州</option>
+                <option value="12">无锡</option>
+                <option value="13">苏州</option>
+            </select>
+            <from style="margin-left:10px">
+                <strong>>>计算结果为:(单位:平方千米)</strong>
+                <input type="text" value="area" id="sum">
+            </from>
+            <button class="btn" onclick="AreaCalculate()">计算</button>
+        </div>
+
+    </div>
+
+    <canvas id="canvas" style="border:1px solid #000;margin-top:0px;margin-left:10px;"></canvas>
+    <script>
+        var times;
+        var canvas = document.getElementById('canvas');
+        var ctext = canvas.getContext('2d');
+        canvas.width = 1230;
+        canvas.height = 570;
+        var e2 = 0.006693421622966;
+        var e12 = 0.006738525414684;
+        var e = Math.sqrt(e2);
+        var a = 6378245;
+        var b = 6356863.0187730473;
+        var longmax = 13574614.85;
+        var longmin = 12952537.5;
+        var latmax = 4156216.543;
+        var latmin = 3579743.802;
+        var scale = 600 / Math.max(latmax - latmin, longmax - longmin);
+        var xoff = longmin;
+        var yoff = latmax;
+        var meca = false, geo = false;
+        var area = 0;
+
+        function GetMap() { //读取江苏省地图
+            var files = document.getElementById('File').files;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var reader = new FileReader();
+                reader.readAsText(file);//以文本形式读取文件
+                reader.onload = function (e) {
+                    record = this.result;//读取文件
+                    Drawmap(record);//绘制该文件中包含的内容
+                }
+            }
+        }
+        function Drawmap(record)//画地图
+        {
+            var type = document.getElementById('geoType').value;
+            var name = record.split('\r\n');
+            var start = false;//用于寻找起点,start为真时表示起点
+            ctext.lineWidth = 1;//设置画笔的宽度和颜色
+            ctext.strokeStyle = "black";
+            //开始读取文件
+            for (var i = 0; i < name.length; i++) {
+                //寻找起点
+                if (name[i] == 'END') {
+                    ctext.stroke();//若遇到‘end’则结束该条线段的绘制，并且将start重置为true
+                    start = true;
+                    continue;
+                }
+                var point = name[i].split(',');//坐标中去除“，”成为point数组
+                if (point.length < 2)//此条件判断是L1还是坐标对，L1经过split函数处理后长度为1
+                {
+                    start = true;
+                    continue;
+                }
+                if (start) {//若start为真则表明为起点，用moveTo()函数
+                    var x0 = point[0];
+                    var y0 = point[1];
+                    if (type == "mecator") {
+                        var x0_ = scale * (x0 - xoff) + 300;
+                        var y0_ = scale * (yoff - y0) + 20;
+                    }
+                    if (type == "geography") {
+                        var point0 = InverseMecator(x0, y0);//变换
+                        x0_ = (point0[0] - 118) * 100 + 500;
+                        y0_ = canvas.height - (point0[1] - 30) * 100;
+                    }
+                    ctext.beginPath();
+                    ctext.moveTo(x0_, y0_);
+                    start = false;
+                }
+                else {
+                    var x1 = point[0];
+                    var y1 = point[1];
+                    if (type == "mecator") {
+                        var x1_ = scale * (x1 - xoff) + 300;
+                        var y1_ = scale * (yoff - y1) + 20;
+                    }
+                    if (type == "geography") {
+                        var point0 = InverseMecator(x1, y1);//变换
+                        x1_ = (point0[0] - 118) * 100 + 500;
+                        y1_ = canvas.height - (point0[1] - 30) * 100;
+                    }
+                    ctext.lineTo(x1_, y1_);
+                }
+            }
+        }
+        function clearcanvas() {
+            ctext.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        //墨卡托投影下多边形的面积计算公式
+        function Areamecator(data) {
+            var s = 0;
+            for (var i = 0; i < data.length; i++) {
+                s += data[i][0] * data[(i + 1) % data.length][1] - data[(i + 1) % data.length][0] * data[i][1];
+            }
+            return Math.abs(s / 2);
+        }
+        //地理坐标系下多边形面积计算
+        function Areageography(data) {
+            var T = 0;
+            var B = 90;//基准纬度，此处设置为90便于后续的比较
+            //转换坐标，将坐标转为经纬度计算
+            for (var i = 0; i < data.length; i++) {
+                var tempx = data[i][0];
+                var tempy = data[i][1];
+                data[i] = InverseMecator(tempx, tempy);
+                if (data[i][1] < B) {
+                    B = data[i][1];//取江苏省的最低纬度
+                }
+            }
+            for (var i = 0; i < data.length - 1; i++) {
+                var B1 = data[i][1] * Math.PI / 180;
+                var B2 = data[i + 1][1] * Math.PI / 180;
+                var L1 = data[i][0] * Math.PI / 180;
+                var L2 = data[i + 1][0] * Math.PI / 180;
+                var K = 2 * a * a * (1 - e2) * (L2 - L1);
+                var K = 2 * a * a * (1 - e2) * (L2 - L1);
+                var A = 1 + 1 / 2 * e2 + 3 / 8 * e2 * e2 + 5 / 16 * e2 * e2 * e2;
+                var B = 1 / 6 * e2 + 3 / 16 * e2 * e2 + 3 / 16 * e2 * e2 * e2;
+                var C = 3 / 80 * e2 * e2 + 1 / 16 * e2 * e2 * e2;
+                var D = 1 / 112 * e2 * e2 * e2;
+                var changeB = (B2 + B1) / 2 - B;
+                var Bm = ((B1 + B2) / 2 + B) / 2;
+                T += K * (A * Math.sin(changeB / 2) * Math.cos(Bm) - B * Math.sin(3 * changeB / 2) * Math.cos(3 * Bm) + C * Math.sin(5 * changeB / 2) * Math.cos(5 * Bm)- D * Math.sin(7 * changeB / 2) * Math.cos(7 * Bm));
+            }
+            return Math.abs(T);
+        }
+        //面积计算
+        function AreaCalculate() {
+            area = 0;
+            var code = document.getElementById('city').value;//读取市对应的编码
+            var type = document.getElementById('geoType').value;//获取投影类型
+            var file = document.getElementById('File').files[0];//读取文件
+            var reader = new FileReader();
+            reader.readAsText(file);
+            var record = null;
+            reader.onload = function (e) {
+                record = this.result;
+                record = record.split('\r\n');
+                var start = false;
+                var temp = 0;
+                for (var i = 0; i < record.length; i++) {
+                    //寻找起点
+                    if (record[i] == 'END') {
+                        continue;
+                    }
+                    var point = record[i].split(',');//坐标中去除“，”成为point数组
+                    if (point.length < 2 && parseInt(point) == code) {
+                        var j = i;
+                        do {
+                            var data = new Array(2);
+                            for (var i = 0; i < 2; i++) {
+                                data[i] = new Array(2);
+                            }
+                            for (j = j + 1; record[j] != 'END'; j++) {
+                                var point0 = record[j].split(',');
+                                data[temp] = point0;
+                                temp++;
+                            }
+                            if (type == "mecator") {
+                                area += Areamecator(data) / 1000000;
+                            }
+                            if (type == "geography") {
+                                area += Areageography(data) / 1000000;
+                            }
+                            temp = 0;
+                            j = j + 1;
+                        } while (record[j] == code)
+                        break;
+                    }
+                }
+                document.getElementById("sum").value = area;
+            }
+        }
+        //墨卡托投影反演公式
+        function InverseMecator(y, x) {
+            var L0 = 0;
+            var B0 = 0;
+            var times = 40;
+            var K = (a * a / b) / Math.sqrt(1 + e12 * Math.cos(B0) * Math.cos(B0)) * Math.cos(B0);
+            var B = 0;//初始迭代值
+            var L = y / K + L0;
+            for (var i = 0; i < times; i++) {
+                B = Math.PI / 2 - 2 * Math.atan(Math.exp(-x / K) * Math.exp((e / 2) * Math.log(1 - e * Math.sin(B) / (1 + e * Math.sin(B)))));
+            }
+            return [L / Math.PI * 180, B / Math.PI * 180];//弧度转换为度数
+        }
+
+
+    </script>
+</body>
+
+</html>
