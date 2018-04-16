@@ -6,7 +6,7 @@ hellocanvas:  https://nnuyj.github.io/10160317_YJ/hellocanvas.html
 
 跳马：  https://nnuyj.github.io/10160317_YJ/tiaoma.html
 
-最佳工作序列：https://nnuyj.github.io/10160317_YJ/test02.html
+最佳工作序列：https://nnuyj.github.io/10160317_YJ/ArrangeWork.html
 
 姓名变换：https://nnuyj.github.io/10160317_YJ/FontTransformation.html
 
