@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>
+		最佳工作序列
+	</title>
+</head>
+
+<body>
+	<!-- 设计开始界面的设计 -->
+	<div align="center" style="position:absolute; width:550px;height:450px; top:50%;left:50%; margin-left:-250px;margin-top:-200px; border:1px dashed #000">
+		<h5 style="margin-left:-380px;margin-right:20px;">10160317 杨景</h5>
+		<h2 style="margin-left:20px;margin-right:20px;">最佳工作序列</h2>
+		<div style="margin-left:20px;margin-right:20px;margin-top:-20px;">
+			<h6 style="font-size:14px;">有N件工作，输入每件工作的费时、最后完成的期限及工作的价值，试求可能的一个完成工作序列，使价值和最大； </h6>
+		</div>
+		<div style="margin-left:20px;margin-right:20px;">
+			<p style="font-size:12px;margin-top:-20px;">* 注：以下的所有输入由空格隔开
+			</p>
+			<table cellspacing="14">
+				<tr>
+					<td>请输入总的工作数目：</td>
+					<td>
+						<input type="text" id="num">
+					</td>
+				</tr>
+				<tr>
+					<td>请输入每件工作的标号：</td>
+					<td>
+						<input type="text" id="ID">
+					</td>
+				</tr>
+				<tr>
+					<td>请输入每件工作的费时：</td>
+					<td>
+						<input type="text" id="time">
+					</td>
+				</tr>
+				<tr>
+					<td>请输入每件工作的最后完成期限：</td>
+					<td>
+						<input type="text" id="deadline">
+					</td>
+				</tr>
+				<tr>
+					<td>请输入每件工作的价值：</td>
+					<td>
+						<input type="text" id="profit">
+					</td>
+				</tr>
+			</table>
+			<button type="button" onclick="getValue()" style="width:90px;height:35px;margin-top:10px; border:1px solid; background:#FFF; font-size:14px">开始计算</button>
+		</div>
+	</div>
+	<script>
+			var num, id, time, dealine, value;
+			var work = new Array();
+			function GetMaxDeadline() {//获取给定的工作中最大的工作截止日期
+				var max = 0;
+				for (var i = 0; i < num; i++) {
+					if (parseInt(work[i].deadline) > max)
+						max = work[i].deadline;
+				}
+				return max;
+			}
+			function SortProfit(a, b)//排序函数
+			{
+				if (a.profit > b.profit)
+					return -1;
+				else if (a.profit == b.profit)
+					return 0;
+				else
+					return 1;
+			}
+			function OutPut(result, slot)//输出结果
+			{
+				document.write("最佳工作序列为：");
+				var value=0;
+				for(var i=0;i<maxdeadline;i++){
+					if(slot[i]==true){
+						temp=result[i];
+						value=work[result[i]].profit;
+						break;
+					}
+				}
+				for (var i = 0; i < maxdeadline; i++) {
+					if (slot[i] == true) {
+						document.write(work[result[i]].id + ' ');
+						if(temp!=result[i]){
+						value=parseInt(work[result[i]].profit)+value;
+						temp=result[i];
+						}
+					}
+					else {
+						document.write('空 ');
+					}
+				}
+				document.write('<br>'+'最大的工作利润为：'+parseInt(value));
+			}
+			function Start() {
+				maxdeadline = GetMaxDeadline();
+				//数组存储最佳工作序列的结果
+				var result = new Array(maxdeadline);
+				//空余时间间隙，用于判断该工作时间段是否被访问过
+				var slot = new Array(maxdeadline);
+				for (var i = 0; i < maxdeadline; i++) {
+					slot[i] = false;//false表示该时间位置没有被访问过
+				}
+				for (var i = 0; i < num; i++) {//各工作序列的循环
+					var deadline_t = work[i].deadline;
+					var time_t = work[i].time;
+					var j = deadline_t - 1;
+					var record = 0;
+					for (; j >= 0 && slot[j] == false && record < time_t; j--) {
+						record++;
+					}
+					var temp = record;
+					if (temp == time_t) {
+						var temp_t = 0;
+						for (var z = deadline_t - 1; temp_t < time_t; z--) {
+							slot[z] = true;
+							result[z] = i;
+							temp_t++;
+						}
+
+					}
+					if (temp < time_t) {
+                    for (var t = 1; t < result.length; t++) {
+                        result[t - 1] = result[t];
+                        slot[t - 1] = slot[t];
+                    }
+                    for (var t = 0; t < result.length; t++) {
+                        if (result[t] == null) {
+                            var re = t + 1;
+                            for (; re < result.length; re++) {
+                                result[re - 1] = result[re];
+                                slot[re - 1] = slot[re];
+                            }
+                        }
+                    }
+                    var re = 0;
+                    for (var t = 0; t < result.length; t++) {
+
+                        if (result[t] == null) {
+                            re++;
+                        }
+                    }
+                    if (re >= time_t) {
+                        for (var t = 0; t < result.length; t++) {
+                            if (result[t] == null) {
+                                break;
+                            }
+                        }
+                        for (; t < result.length; t++) {
+                            result[t] = i;
+                            slot[t] = true;
+                        }
+                    }
+                }
+				}
+				OutPut(result, slot);
+			}
+			function getValue() {//读取用户输入的数字
+				num = parseInt(document.getElementById("num").value);
+				var id_temp = document.getElementById("ID").value;
+				id = id_temp.split(' ');//去除字符串当中的空格，使之变为数组
+				var time_temp = document.getElementById("time").value;
+				time = time_temp.split(' ');
+				var deadline_temp = document.getElementById("deadline").value;
+				deadline = deadline_temp.split(' ');
+				var profit_temp = document.getElementById("profit").value;
+				profit = profit_temp.split(' ');
+				for (var i = 0; i < num; i++) {//work中的每个元素都相当于一个结构体
+					var temp = { 'id': id[i], 'time': parseInt(time[i]), 'deadline': parseInt(deadline[i]), 'profit': parseInt(profit[i]) };
+					work[i] = temp;
+				}
+				//按照各项工作的利润进行排序
+				work.sort(SortProfit);
+				//开始计算最佳工作序列
+				Start();
+			}
+		</script>
+</body>
