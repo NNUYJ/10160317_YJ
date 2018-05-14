@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        四叉树四进制编码
+    </title>
+</head>
+
+<body>
+    <div style="display:flex;flex-direction:row;margin-left:2%;">
+        <div style="font-size:15px;font-family:宋体;">
+            <input id="File" type="file" multiple="mutifile" />
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:row;margin-left:2%;margin-top:1%;">
+        <div>
+            <button type="button" onclick="DrawFiles()">原始矩阵显示</button>
+        </div>
+        <div style="margin-left:2%">
+            <button type="button" onclick="DrawCode()">四进制编码结果</button>
+        </div>
+    </div>
+    <div style="display:flex;flex-direction:row;margin-top:10px;font-size:15px;;">
+        <div id="original" style="margin-left:2%;width:300px;height:320px;border:1px solid #cceff5;background:#fafcfd"></div>
+        <div id="result1" style="margin-left:2%;width:300px;height:320px;border:1px solid #cceff5;background:#fafcfd"></div>
+        <div id="result2" style="margin-left:2%;"></div>
+    </div>
+    <br>
+    </div>
+    <script>
+        var row, column;
+        var num;
+        var final = [];
+        var result = [];
+        var Marton;
+        var k = 0;
+        function DrawFiles() { //读取数据
+            var files = document.getElementById('File').files;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var reader = new FileReader();
+                reader.readAsText(file);//以文本形式读取文件
+                //成功读取
+                reader.onload = function (e) {
+                    record = this.result;//读取文件
+                    var rect = record.split('\r\n');
+                    for (var i = 0; i < rect.length; i++) {
+                        rect[i] = rect[i].split(',');
+                    }
+                    var text = document.getElementById('original');
+                    text.innerHTML += "&nbsp原始矩阵为：<br/>";
+                    for (var i = 1; i < rect.length; i++) {
+                        for (var j = 0; j < rect[i].length; j++) {
+                            text.innerHTML += "&nbsp&nbsp";
+                            text.innerText += rect[i][j];
+                            text.innerHTML += "&nbsp&nbsp";
+                        }
+                        text.innerHTML += "<br/><br/>";
+                    }
+                }
+            }
+        }
+        function TenToTwo(n) {//十进制转二进制
+            var temp = [];
+            if (n == 0) {
+                temp.push(0);
+                temp.push(0);
+                temp.push(0);
+                return temp;
+            }
+            while (n != 0) {
+                temp.push(n % 2);
+                n = parseInt(n / 2);
+            }
+            //将结果格式化为3位
+            if (temp.length == 1) {
+                temp.push(0);
+                temp.push(0);
+            }
+            if (temp.length == 2) {
+                temp.push(0);
+            }
+            //数组倒序，形成二进制编码
+            for (var i = 0; i < parseInt(temp.length / 2); i++) {
+                var t = temp[i];
+                temp[i] = temp[temp.length - 1 - i];
+                temp[temp.length - 1 - i] = t;
+            }
+            return temp;
+        }
+        function GetMorton(i, j, layers) {//计算对应的M码
+            var mark = [];
+            var itemp = TenToTwo(i);
+            var jtemp = TenToTwo(j);
+            var ijtemp = [];
+            for (var t = 0; t < itemp.length; t++) {
+                ijtemp[t] = (2 * itemp[t] + jtemp[t]);
+            }
+            for (var t = 0; t < layers; t++) {
+                mark.push(ijtemp[t]);
+            }
+            return mark;
+        }
+        function CheckValue(m, n, edge) {//判断每一深度下的矩阵中的属性值是否相同
+            var start = final[m][n];
+            for (var i = m; i < m + edge; i++) {
+                for (var j = n; j < n + edge; j++) {
+                    if (final[i][j] != start)//若有一个不相同则返回false
+                        return -1;
+                }
+            }
+            return start;
+        }
+        function Changenum(m, n, edge, mor) {//存储morton码
+            for (var i = m; i < m + edge; i++) {
+                for (var j = n; j < n + edge; j++) {
+                    final[i][j] = mor;
+                }
+            }
+        }
+        function QuadtreeCode(x, y, layers) {//自上而下方式，四叉树编码
+            var edge = column / Math.pow(2, layers);//edge为每次检测的同一深度下的矩阵边长
+            var t1 = CheckValue(x, y, edge);
+            if (t1 != -1) {//若相同的话，计算此值对应的M码
+                var mor = GetMorton(x, y, layers);//存储其深度对应的M码
+                Changenum(x, y, edge, mor);
+                var para = { morton: mor, depth: layers, value: t1 };//设计结构，存储M码，深度，属性值
+                result.push(para);
+            }
+            else {//若不相同，利用递归，再往深度即缩小边长再次检验
+                QuadtreeCode(x, y, layers + 1);
+            }
+            //再按照右上，左下，右下的顺序判断同一矩阵下的值是否相等
+            var t2 = CheckValue(x, y + edge, edge);//判断右上4*4矩阵的值是否相同
+            if (t2 != -1) {//若相同的话，则计算这一层对应的marton码
+                var mor = GetMorton(x, y + edge, layers);
+                Changenum(x, y + edge, edge, mor);
+                var para = { morton: mor, depth: layers, value: t2 };
+                result.push(para);
+            }
+            else {
+                QuadtreeCode(x, y + edge, layers + 1);
+            }
+
+            var t3 = CheckValue(x + edge, y, edge);//判断左下4*4矩阵的值是否相同
+            if (t3 != -1) {//若相同的话，则计算这一层对应的marton码
+                var mor = GetMorton(x + edge, y, layers);
+                Changenum(x + edge, y, edge, mor);
+                var para = { morton: mor, depth: layers, value: t3 };
+                result.push(para);
+            }
+            else {
+                QuadtreeCode(x + edge, y, layers + 1);
+            }
+            var t4 = CheckValue(x + edge, y + edge, edge);//判断右下4*4矩阵的值是否相同
+            if (t4 != -1) {//若相同的话，则计算这一层对应的marton码
+                var mor = GetMorton(x + edge, y + edge, layers);
+                Changenum(x + edge, y + edge, edge, mor);
+                var para = { morton: mor, depth: layers, value: t4 };
+                result.push(para);
+            }
+            else {
+                QuadtreeCode(x + edge, y + edge, layers + 1);
+            }
+        }
+        function DrawResult() {//输出编码后的矩阵
+            var text = document.getElementById('result1');
+            text.innerHTML = "四进制编码后的矩阵：<br/>";
+            for (var i = 0; i < final.length; i++) {
+                for (j = 0; j < final[i].length; j++) {
+                    text.innerHTML += "&nbsp&nbsp";
+                    for (t = 0; t < final[i][j].length; t++) {
+                        text.innerText += final[i][j][t];
+                    }
+                    text.innerHTML += "&nbsp&nbsp";
+                }
+                text.innerHTML += "<br/><br/>";
+            }
+            text = document.getElementById('result2')
+            text.innerHTML = "四进制编码的结果为：<br/>";
+            for (var i = 0; i < result.length; i++) {
+                // var h = i + 1;
+                text.innerHTML += "&nbsp(&nbsp";
+                for (var j = 0; j < result[i].morton.length; j++) {
+                    text.innerHTML += result[i].morton[j];
+                }
+                text.innerHTML += "&nbsp,&nbsp" + result[i].depth + "&nbsp,&nbsp" + result[i].value + "&nbsp)<br/>";
+                text.innerHTML += "<br/>"
+            }
+        }
+        function DrawCode() {
+            var files = document.getElementById('File').files;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var reader = new FileReader();
+                reader.readAsText(file);//以文本形式读取文件
+                //成功读取
+                reader.onload = function (e) {
+                    record = this.result;//读取文件
+                    var rect = record.split('\r\n');//去除所有的回车符及换行符
+                    var num = rect[0].split(',');//去除,
+                    row = num[0];//获取行列数
+                    column = num[1];
+                    //获取数字
+                    for (var i = 1; i < rect.length; i++) {
+                        var one = [];
+                        if (rect[i] == "")//去掉回车和换行符之后最后一行为""
+                            break;
+                        var temp = rect[i].split(',');
+                        for (var j = 0; j < temp.length; j++) {
+                            if (temp[j] == "")//最后一列为""
+                                break;
+                            if (temp[j][0] == "")//第一若为空格
+                                temp[j] = temp[j].slice(1, 2);//去除一位数前面的空格
+                            one.push(temp[j]);//保存数字
+                        }
+                        final.push(one);//每一行的数字存储最终成为二维数组
+                    }
+                    QuadtreeCode(0, 0, 1);//从左上角开始检验，此时为第一层
+                    DrawResult();
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
