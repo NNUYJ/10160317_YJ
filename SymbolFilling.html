@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        地图符号
+    </title>
+</head>
+
+<body onload>
+    <!-- 打开文件输入页面的设计 -->
+    <div style="display:flex;flex-direction:row;margin-left:2%;">
+        <div style="font-size:15px;font-family:宋体;">
+            <strong>>>请选择需要绘制的数据文件(gen格式)：</strong>
+            <input id="File" type="file" multiple="mutifile" />
+        </div>
+        <div style="margin-left:-5%;">
+            <button type="button" onclick="get() ">绘制</button>
+        </div>
+        <div style="margin-left:2%;">
+            <button type="button" onclick="clearcanvas()">清除</button>
+        </div>
+        <div style="margin-left:2%;margin-top:5px;font-size:15px;font-family:宋体">
+            注：若要重新选择文件，请先刷新整个界面
+        </div>
+    </div>
+
+    <canvas id="canvas" style="border:1px solid lightgray;margin-top:10px;margin-left:2vw;"></canvas>
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctext = canvas.getContext('2d');
+        canvas.width = 1220;
+        canvas.height = 560;
+        // 读取文件
+        function get() {
+            var files = document.getElementById('File').files;
+            for (var i = 0; i < files.length; i++) {
+                var n = 0;
+                var file = files[i];
+                var reader = new FileReader();
+                reader.readAsText(file);//以文本形式读取文件
+                //成功读取
+                reader.onload = function (e) {
+                    record = this.result;//读取文件
+                    draw(record, n);//绘制该文件中包含的内容
+                    n++;
+                }
+            }
+        }
+        function clearcanvas() {
+            ctext.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        //其余
+        function drawVegrgn(aim) {
+            var dis = 3;
+            var xmax = 0, xmin = 999999999, ymax = 0, ymin = 999999999;
+            for (var i = 0; i < aim.length; i++) {
+                if (aim[i][0] > xmax) {
+                    xmax = aim[i][0];
+                }
+                if (aim[i][0] < xmin) {
+                    xmin = aim[i][0];
+                }
+                if (aim[i][1] > ymax) {
+                    ymax = aim[i][1];
+                }
+                if (aim[i][1] < ymin) {
+                    ymin = aim[i][1];
+                }
+            }
+            var record = 0;
+            var ytemp = ymin;
+            while (ytemp <= ymax) {
+                var xtemp = xmin;
+                record++;
+                while (xtemp <= xmax) {
+                    if (pointIspoly([xtemp, ytemp], aim) && pointIspoly([xtemp + 1, ytemp], aim)) {
+                        drawsymbol(xtemp, ytemp, record);
+                    }
+                    xtemp = xtemp + dis;
+                }
+                ytemp = ytemp + dis;
+            }
+
+        }
+        function mult(a, b, c) {
+            return (a[0] - c[0]) * (b[1] - c[1]) - (b[0] - c[0]) * (a[1] - c[1]);
+        }
+        function pointIspoly(point, poly) {
+            var px = [], py = [];
+            for (var i = 0; i < poly.length; i++) {
+                px.push(poly[i][0]);
+                py.push(poly[i][1]);
+            }
+            px.sort(function (a, b) {
+                return a - b;
+            })
+            py.sort(function (a, b) {
+                return a - b;
+            })
+            //首先判断点是否位于多边形的最小外接矩形之内，若不满足则无需进行下面的判断
+            var maxx = px[px.length - 1];
+            var minx = px[0];
+            var maxy = py[py.length - 1];
+            var miny = py[0];
+            if (point[0] < minx || point[0] > maxx || point[1] < miny || point[1] > maxy) {
+                return false;
+            }
+            var num = 0;
+
+            var pointtemp = [maxx + 100, point[1]];//相当于射线
+            for (var i = 0; i < poly.length - 1; i++) {
+                var point1 = poly[i];
+                var point2 = poly[i + 1];
+                if (mult(point1, pointtemp, point) * mult(pointtemp, point2, point) >= 0
+                    && mult(point, point2, point1) * mult(point2, pointtemp, point1) >= 0) {
+                    num++;
+                }
+            }
+            //射线与多边形的交点为奇数个则在多边形内
+            if ((num % 2) != 0) {
+                return true;
+            }
+            //若为偶数个则不再多边形内
+            return false;
+        }
+
+        function drawsymbol(x, y, num) {
+            x = (x - 430000) * 3 + 200;
+            y = canvas.height - (y - 3260000) * 3 + 1260;
+
+            ctext.beginPath();
+            ctext.moveTo(x, y);
+            ctext.lineTo(x, y - 1);
+            ctext.lineWidth = 1;
+            ctext.strokeStyle = "green";
+            ctext.stroke();
+
+            ctext.beginPath();
+            ctext.moveTo(x + 3, y);
+            ctext.lineTo(x + 3, y - 1);
+            ctext.lineWidth = 1;
+            ctext.strokeStyle = "green";
+            ctext.stroke();
+
+            ctext.beginPath();
+            ctext.moveTo(x, y + 1);
+            ctext.lineTo(x + 3, y + 1);
+            ctext.lineWidth = 1;
+            ctext.strokeStyle = "green";
+            ctext.stroke();
+            //填充符号为偶数时符号不同
+            if (num % 2 == 0) {
+                ctext.beginPath();
+                ctext.moveTo(x, y + 2);
+                ctext.lineTo(x + 3, y + 2);
+                ctext.lineWidth = 1;
+                ctext.strokeStyle = "#993333";
+                ctext.stroke();
+            }
+        }
+        function drawBuildings(aim) {
+            var dis = 2;//设定晕线间的间隔为3
+            // 进行旋转变换，要求晕线方向与Y轴方向一致
+            for (var i = 0; i < aim.length; i++) {
+                var x = aim[i][0];
+                var y = aim[i][1];
+                var xnew = x * Math.sin(Math.PI / 4) - y * Math.cos(Math.PI / 4);
+                var ynew = y * Math.sin(Math.PI / 4) + x * Math.cos(Math.PI / 4);
+                aim[i][0] = xnew;
+                aim[i][1] = ynew;
+            }
+            //在新坐标系中找到轮廓点x方向的最大坐标
+            var xmin = 99999999999, xmax = -9999999999;
+            for (var i = 0; i < aim.length; i++) {
+                if (aim[i][0] > xmax) {
+                    xmax = aim[i][0];
+                }
+                if (aim[i][0] < xmin) {
+                    xmin = aim[i][0];
+                }
+            }
+            var linenum = Math.floor((xmax - xmin) / dis);
+            // 返回小于数值的最大整数
+            var points = [];
+            for (var j = 0; j < linenum; j++) {
+                // 求晕线与轮廓边的交点
+                points = [];
+                var xtemp = xmin + dis * (j + 1);
+                for (var i = 0; i < aim.length - 1; i++) {
+                    var p0 = aim[i];
+                    var p1 = aim[i + 1];
+                    if ((p0[0] - xtemp) * (p1[0] - xtemp) <= 0) {
+                        var crossx = xmin + dis * (j + 1);
+                        var crossy = (p0[1] * p1[0] - p1[1] * p0[0]) / (p1[0] - p0[0]) + (p1[1] - p0[1]) * crossx / (p1[0] - p0[0]);
+                        points.push([crossx, crossy]);
+                    }
+                }
+                for (var k = 0; k < points.length; k++) {
+                    var x = points[k][0];
+                    var y = points[k][1];
+                    var xnew = x * Math.sin(Math.PI / 4) + y * Math.cos(Math.PI / 4);
+                    var ynew = y * Math.sin(Math.PI / 4) - x * Math.cos(Math.PI / 4);
+                    points[k][0] = xnew;
+                    points[k][1] = ynew;
+                }
+                points.sort(function (a, b) {
+                    return a[0] - b[0];
+                });
+                if (points.length != 0) {
+                    for (var i = 0; i < parseInt(points.length / 2); i++) {
+                        var start = [(points[2 * i][0] - 430000) * 3 + 200, canvas.height - (points[2 * i][1] - 3260000) * 3 + 1260];
+                        var end = [(points[2 * i + 1][0] - 430000) * 3 + 200, canvas.height - (points[2 * i + 1][1] - 3260000) * 3 + 1260];
+                        ctext.strokeStyle = "black";
+                        ctext.beginPath();
+                        ctext.moveTo(start[0], start[1]);
+                        ctext.lineTo(end[0], end[1]);
+                        ctext.stroke();
+                    }
+                }
+
+            }
+        }
+        function draw(record, n)//画名字
+        {
+            var name = record.split('\r\n');
+            var start = false;//用于寻找起点,start为真时表示起点
+            ctext.lineWidth = 1;//设置画笔的宽度和颜色
+            var aim = [];
+
+            //开始读取文件
+            for (var i = 0; i < name.length; i++) {
+                //寻找起点
+                if (name[i] == 'END') {
+                    ctext.stroke();//若遇到‘end’则结束该条线段的绘制，并且将start重置为true
+                    start = true;
+                    if (n == 0) {
+                        drawBuildings(aim);
+                    }
+                    if (n == 1) {
+                        drawVegrgn(aim);
+                    }
+                    continue;
+                }
+                var point = name[i].split(',');//坐标中去除“，”成为point数组
+
+                if (point.length < 2)//此条件判断是L1还是坐标对，L1经过split函数处理后长度为1
+                {
+                    start = true;//找到“L1”表明找到了起点
+                    aim = [];
+                    continue;//继续寻找起始坐标
+
+                }
+                point[0] = parseFloat(point[0]);
+                point[1] = parseFloat(point[1]);
+                if (start) {//若start为真则表明为起点，用moveTo()函数
+                    var x0 = (point[0] - 430000) * 3 + 200;
+                    var y0 = canvas.height - (point[1] - 3260000) * 3 + 1260;
+                    aim.push(point);
+                    ctext.beginPath();
+                    if (n == 0) {
+                        ctext.strokeStyle = "black";
+                    }
+                    if (n == 1) {
+                        ctext.strokeStyle = "green";
+                    }
+                    ctext.moveTo(x0, y0);
+                    start = false;//表示已经过了起点
+                }
+                else {
+                    var x1 = (point[0] - 430000) * 3 + 200;
+                    var y1 = canvas.height - (point[1] - 3260000) * 3 + 1260;
+                    aim.push(point);
+                    ctext.lineTo(x1, y1);
+                    start = false;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
