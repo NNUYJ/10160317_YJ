@@ -12,7 +12,7 @@ hellocanvas:  https://nnuyj.github.io/10160317_YJ/hellocanvas.html
 
 地图投影：https://nnuyj.github.io/10160317_YJ/MapProjection.html
 
-面积计算：https://nnuyj.github.io/10160317_YJ/AreaCalculation.htm
+面积计算：https://nnuyj.github.io/10160317_YJ/AreaCalculation.html
 
 数据压缩：https://nnuyj.github.io/10160317_YJ/DataCompression.html
 
