@@ -21,3 +21,5 @@ hellocanvas:  https://nnuyj.github.io/10160317_YJ/hellocanvas.html
 多边形左转算法：https://nnuyj.github.io/10160317_YJ/LeftTurn.html
 
 符号填充：https://nnuyj.github.io/10160317_YJ/SymbolFilling.html
+
+矢量栅格化：https://nnuyj.github.io/10160317_YJ/grid.html
